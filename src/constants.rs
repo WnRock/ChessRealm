@@ -13,8 +13,14 @@ pub const APP_MIN_SIZE: [f32; 2] = [300.0, 380.0];
 /// Storage key for saving/loading app state
 pub const APP_STATE_KEY: &str = "chess_realm_state";
 
-/// Available fonts
-pub const AVAILABLE_FONTS: &[(&str, &str)] = &[
-    ("zhuque-fangsong", "ZhuqueFangsong-Regular.ttf"),
-    ("feibo-zhengdots", "FeiboZhengDots.ttf"),
+/// Available fonts: (name, embedded font data)
+pub const AVAILABLE_FONTS: &[(&str, &[u8])] = &[
+    (
+        "zhuque-fangsong",
+        include_bytes!("../assets/ZhuqueFangsong-Regular.ttf"),
+    ),
+    (
+        "feibo-zhengdots",
+        include_bytes!("../assets/FeiboZhengDots.ttf"),
+    ),
 ];

@@ -89,17 +89,14 @@ impl eframe::App for ChessRealm {
 fn load_fonts(ctx: &egui::Context) {
     let mut fonts = FontDefinitions::default();
 
-    for (name, file) in AVAILABLE_FONTS {
-        let font_path = format!("assets/{}", file);
-        if let Ok(font_data) = std::fs::read(&font_path) {
-            fonts
-                .font_data
-                .insert(name.to_string(), FontData::from_owned(font_data).into());
+    for (name, data) in AVAILABLE_FONTS {
+        fonts
+            .font_data
+            .insert(name.to_string(), FontData::from_static(data).into());
 
-            fonts
-                .families
-                .insert(FontFamily::Name((*name).into()), vec![name.to_string()]);
-        }
+        fonts
+            .families
+            .insert(FontFamily::Name((*name).into()), vec![name.to_string()]);
     }
 
     ctx.set_fonts(fonts);
