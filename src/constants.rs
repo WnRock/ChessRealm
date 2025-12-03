@@ -4,6 +4,9 @@ pub const APP_ID: &str = "dev.wnrock.chess_realm";
 /// The name of the application, shown in the window title
 pub const APP_NAME: &str = "Chess Realm";
 
+/// The application icon as a byte array (PNG format)
+pub const APP_ICON: &[u8] = include_bytes!("../assets/icon.png");
+
 /// Default window size [width, height] in pixels
 pub const APP_DEFAULT_SIZE: [f32; 2] = [1024.0, 768.0];
 
