@@ -7,6 +7,8 @@ pub struct WindowState {
     pub width: f32,
     pub height: f32,
     pub dark_mode: bool,
+    #[serde(skip)]
+    pub show_settings: bool,
 }
 
 impl Default for WindowState {
@@ -15,6 +17,7 @@ impl Default for WindowState {
             width: APP_DEFAULT_SIZE[0],
             height: APP_DEFAULT_SIZE[1],
             dark_mode: true,
+            show_settings: false,
         }
     }
 }
