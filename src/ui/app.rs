@@ -30,6 +30,10 @@ impl ChessRealm {
         };
         cc.egui_ctx.set_visuals(visuals);
 
+        cc.egui_ctx.style_mut(|style| {
+            style.spacing.button_padding = egui::vec2(12.0, 6.0);
+        });
+
         Self {
             game: GameState::default(),
             ui: UiState {
@@ -67,18 +71,14 @@ impl eframe::App for ChessRealm {
                         }
                     });
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button(font("主题", "zhuque-fangsong", 18.0)).clicked() {
-                            self.ui.window.dark_mode = !self.ui.window.dark_mode;
-                            let visuals = if self.ui.window.dark_mode {
-                                egui::Visuals::dark()
-                            } else {
-                                egui::Visuals::light()
-                            };
-                            ctx.set_visuals(visuals);
+                        if ui.button(font("设置", "zhuque-fangsong", 18.0)).clicked() {
+                            self.ui.window.show_settings = !self.ui.window.show_settings;
                         }
                     });
                 });
             });
+
+        self.render_settings_window(ctx);
 
         egui::CentralPanel::default().show(ctx, |ui| {
             self.render_board(ui);
