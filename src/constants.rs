@@ -11,7 +11,7 @@ pub const APP_ICON: &[u8] = include_bytes!("../assets/icon.png");
 pub const APP_DEFAULT_SIZE: [f32; 2] = [1024.0, 768.0];
 
 /// Minimum window size [width, height] in pixels
-pub const APP_MIN_SIZE: [f32; 2] = [300.0, 380.0];
+pub const APP_MIN_SIZE: [f32; 2] = [310.0, 380.0];
 
 /// Storage key for saving/loading app state
 pub const APP_STATE_KEY: &str = "chess_realm_state";

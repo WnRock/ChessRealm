@@ -1,4 +1,4 @@
-use crate::constants::{APP_STATE_KEY, AVAILABLE_FONTS};
+use crate::constants::{APP_MIN_SIZE, APP_STATE_KEY, AVAILABLE_FONTS};
 use crate::game::state::GameState;
 use crate::ui::state::{UiState, WindowState};
 use eframe::egui::{self, FontData, FontDefinitions, FontFamily, FontId, RichText};
@@ -30,10 +30,6 @@ impl ChessRealm {
         };
         cc.egui_ctx.set_visuals(visuals);
 
-        cc.egui_ctx.style_mut(|style| {
-            style.spacing.button_padding = egui::vec2(12.0, 6.0);
-        });
-
         Self {
             game: GameState::default(),
             ui: UiState {
@@ -61,17 +57,49 @@ impl eframe::App for ChessRealm {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.track_window_size(ctx);
 
+        let bar_height = if self.ui.window.height < 500.0 {
+            let t = (self.ui.window.height - APP_MIN_SIZE[1]) / (500.0 - APP_MIN_SIZE[1]);
+            40.0 + t * (50.0 - 40.0)
+        } else {
+            50.0
+        };
+        let scale = bar_height / 50.0;
+        let font_size = 18.0 * scale;
+        let button_padding = egui::vec2(12.0 * scale, 6.0 * scale);
+
+        ctx.style_mut(|style| {
+            style.spacing.button_padding = button_padding;
+        });
+
+        let panel_frame = egui::Frame {
+            inner_margin: egui::Margin {
+                left: 15,
+                right: 15,
+                top: 5,
+                bottom: 5,
+            },
+            fill: ctx.style().visuals.panel_fill,
+            ..Default::default()
+        };
+
         egui::TopBottomPanel::top("top_bar")
-            .exact_height(50.)
+            .exact_height(bar_height)
+            .frame(panel_frame)
             .show(ctx, |ui| {
                 ui.horizontal_centered(|ui| {
                     ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
-                        if ui.button(font("新局", "zhuque-fangsong", 18.0)).clicked() {
+                        if ui
+                            .button(font("新局", "zhuque-fangsong", font_size))
+                            .clicked()
+                        {
                             self.game = GameState::default();
                         }
                     });
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.button(font("设置", "zhuque-fangsong", 18.0)).clicked() {
+                        if ui
+                            .button(font("设置", "zhuque-fangsong", font_size))
+                            .clicked()
+                        {
                             self.ui.window.show_settings = !self.ui.window.show_settings;
                         }
                     });
