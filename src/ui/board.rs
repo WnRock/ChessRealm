@@ -4,7 +4,10 @@ use crate::{
         rules::get_valid_moves,
         state::MoveResult,
     },
-    ui::{app::ChessRealm, state::PopupTip},
+    ui::{
+        app::ChessRealm,
+        state::{GameMode, PopupTip},
+    },
 };
 use eframe::egui;
 
@@ -268,35 +271,21 @@ impl ChessRealm {
     }
 
     fn handle_board_click(&mut self, row: usize, col: usize) {
+        if self.should_block_input() {
+            return;
+        }
+
         let clicked_pos = (row, col);
 
         if let Some(selected_pos) = self.game.selected_piece {
             if self.game.valid_moves.contains(&clicked_pos) {
                 let result = self.game.make_move(selected_pos, clicked_pos);
-
-                match result {
-                    MoveResult::Capture(_piece) => {
-                        self.ui.popup = Some(PopupTip::new("吃".to_string()));
-                    }
-                    MoveResult::Check => {
-                        self.ui.popup = Some(PopupTip::new("将".to_string()));
-                    }
-                    MoveResult::CaptureAndCheck(_piece) => {
-                        self.ui.popup = Some(PopupTip::new("将".to_string()));
-                    }
-                    MoveResult::Checkmate(winner) | MoveResult::Stalemate(winner) => {
-                        let message = match winner {
-                            PieceSide::Red => "胜",
-                            PieceSide::Black => "负",
-                        };
-                        self.ui.popup = Some(PopupTip::new_game_end(message.to_string()));
-                    }
-                    MoveResult::Success => {}
-                    MoveResult::Invalid => {}
-                }
+                self.handle_move_result(result);
 
                 self.game.selected_piece = None;
                 self.game.valid_moves.clear();
+
+                self.check_ai_turn();
                 return;
             }
 
@@ -325,6 +314,49 @@ impl ChessRealm {
                         get_valid_moves(&self.game.board, clicked_pos, self.game.current_turn);
                 }
             }
+        }
+    }
+
+    pub fn handle_move_result(&mut self, result: MoveResult) {
+        match result {
+            MoveResult::Capture(_piece) => {
+                self.ui.popup = Some(PopupTip::new("吃".to_string()));
+            }
+            MoveResult::Check => {
+                self.ui.popup = Some(PopupTip::new("将".to_string()));
+            }
+            MoveResult::CaptureAndCheck(_piece) => {
+                self.ui.popup = Some(PopupTip::new("将".to_string()));
+            }
+            MoveResult::Checkmate(winner) | MoveResult::Stalemate(winner) => {
+                let message = match winner {
+                    PieceSide::Red => "胜",
+                    PieceSide::Black => "负",
+                };
+                self.ui.popup = Some(PopupTip::new_game_end(message.to_string()));
+            }
+            MoveResult::Success | MoveResult::Invalid => {}
+        }
+    }
+
+    /// Returns true if player input should be blocked.
+    fn should_block_input(&self) -> bool {
+        if self.ui.ai_thinking {
+            return true;
+        }
+        if self.ui.window.game_mode == GameMode::PlayerVsAI && self.game.is_ai_turn() {
+            return true;
+        }
+        false
+    }
+
+    /// Checks if it's AI's turn and sets the thinking flag.
+    fn check_ai_turn(&mut self) {
+        if self.ui.window.game_mode == GameMode::PlayerVsAI
+            && self.game.is_ai_turn()
+            && self.game.status == crate::game::state::GameStatus::InProgress
+        {
+            self.ui.ai_thinking = true;
         }
     }
 }

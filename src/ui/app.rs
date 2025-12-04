@@ -1,6 +1,8 @@
 use crate::constants::{APP_MIN_SIZE, APP_STATE_KEY, AVAILABLE_FONTS};
+use crate::game::engine::uci::EngineHandle;
 use crate::game::state::GameState;
-use crate::ui::state::{UiState, WindowState};
+use crate::ui::state::UiState;
+use crate::ui::state::WindowState;
 use eframe::egui::{self, FontData, FontDefinitions, FontFamily, FontId, RichText};
 
 pub struct ChessRealm {
@@ -30,11 +32,20 @@ impl ChessRealm {
         };
         cc.egui_ctx.set_visuals(visuals);
 
+        let engine = window
+            .engine_path
+            .as_ref()
+            .and_then(|path| EngineHandle::new(path).ok());
+
         Self {
             game: GameState::default(),
             ui: UiState {
                 window,
                 popup: None,
+                engine,
+                engine_invalid: false,
+                ai_thinking: false,
+                ai_request_sent: false,
             },
         }
     }
@@ -47,6 +58,36 @@ impl ChessRealm {
             }
         }
     }
+
+    /// Sends a move request to the engine.
+    pub fn request_ai_move(&mut self) {
+        if let Some(engine) = &self.ui.engine {
+            let moves_uci = self.game.moves_to_uci();
+            engine.request_move(moves_uci, Some(10), Some(2000));
+            self.ui.ai_request_sent = true;
+        }
+    }
+
+    /// Polls for AI move result and applies it if available.
+    pub fn poll_ai_move(&mut self) {
+        if !self.ui.ai_thinking {
+            return;
+        }
+
+        if let Some(engine) = &self.ui.engine {
+            if let Some(result) = engine.try_recv_move() {
+                self.ui.ai_thinking = false;
+                self.ui.ai_request_sent = false;
+
+                if let Ok(move_uci) = result {
+                    if let Some(ai_move) = GameState::uci_to_move(&move_uci) {
+                        let result = self.game.make_move(ai_move.from, ai_move.to);
+                        self.handle_move_result(result);
+                    }
+                }
+            }
+        }
+    }
 }
 
 impl eframe::App for ChessRealm {
@@ -56,6 +97,15 @@ impl eframe::App for ChessRealm {
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.track_window_size(ctx);
+        self.poll_ai_move();
+
+        if self.ui.ai_thinking && !self.ui.ai_request_sent {
+            self.request_ai_move();
+        }
+
+        if self.ui.ai_thinking {
+            ctx.request_repaint();
+        }
 
         let bar_height = if self.ui.window.height < 500.0 {
             let t = (self.ui.window.height - APP_MIN_SIZE[1]) / (500.0 - APP_MIN_SIZE[1]);
@@ -93,7 +143,25 @@ impl eframe::App for ChessRealm {
                             .clicked()
                         {
                             self.game = GameState::default();
+                            self.ui.ai_thinking = false;
+                            self.ui.ai_request_sent = false;
                         }
+                        let can_toggle_to_ai = self.ui.engine.is_some()
+                            || self.ui.window.game_mode == crate::ui::state::GameMode::PlayerVsAI;
+                        ui.add_enabled_ui(can_toggle_to_ai, |ui| {
+                            if ui
+                                .button(font(
+                                    self.ui.window.game_mode.label(),
+                                    "zhuque-fangsong",
+                                    font_size,
+                                ))
+                                .clicked()
+                            {
+                                self.ui.window.game_mode = self.ui.window.game_mode.toggle();
+                                self.ui.ai_thinking = false;
+                                self.ui.ai_request_sent = false;
+                            }
+                        });
                     });
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         if ui
