@@ -169,6 +169,45 @@ impl ChessRealm {
             draw_cross(i * 2, 6);
         }
 
+        if let Some(last_move) = self.game.last_move {
+            let highlight_color = egui::Color32::from_rgba_unmultiplied(255, 200, 0, 120);
+            let corner_len = cell_size * 0.2;
+            let stroke = egui::Stroke::new(3.0, highlight_color);
+
+            for &(row, col) in &[last_move.from, last_move.to] {
+                let center = to_screen(col, row);
+                let half = cell_size * 0.45;
+
+                let corners = [
+                    (
+                        center + egui::vec2(-half, -half),
+                        egui::vec2(corner_len, 0.0),
+                        egui::vec2(0.0, corner_len),
+                    ),
+                    (
+                        center + egui::vec2(half, -half),
+                        egui::vec2(-corner_len, 0.0),
+                        egui::vec2(0.0, corner_len),
+                    ),
+                    (
+                        center + egui::vec2(-half, half),
+                        egui::vec2(corner_len, 0.0),
+                        egui::vec2(0.0, -corner_len),
+                    ),
+                    (
+                        center + egui::vec2(half, half),
+                        egui::vec2(-corner_len, 0.0),
+                        egui::vec2(0.0, -corner_len),
+                    ),
+                ];
+
+                for (corner, h_offset, v_offset) in corners {
+                    painter.line_segment([corner, corner + h_offset], stroke);
+                    painter.line_segment([corner, corner + v_offset], stroke);
+                }
+            }
+        }
+
         for &(row, col) in &self.game.valid_moves {
             let center = to_screen(col, row);
             let radius = cell_size * 0.15;

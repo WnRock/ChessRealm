@@ -42,6 +42,8 @@ pub struct GameState {
     pub selected_piece: Option<(usize, usize)>,
     #[serde(skip)]
     pub valid_moves: Vec<(usize, usize)>,
+    #[serde(skip)]
+    pub last_move: Option<Move>,
 }
 
 impl Default for GameState {
@@ -53,6 +55,7 @@ impl Default for GameState {
             move_history: Vec::new(),
             selected_piece: None,
             valid_moves: Vec::new(),
+            last_move: None,
         }
     }
 }
@@ -117,7 +120,9 @@ impl GameState {
             return MoveResult::Invalid;
         }
 
-        self.move_history.push(Move { from, to });
+        let current_move = Move { from, to };
+        self.move_history.push(current_move);
+        self.last_move = Some(current_move);
 
         let piece = self.board[from.0][from.1].take();
         let captured = self.board[to.0][to.1].take();
