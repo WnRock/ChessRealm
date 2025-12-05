@@ -1,6 +1,6 @@
 [package]
 name = "chess_realm"
-version = "0.1.0"
+version = "0.2.1"
 edition = "2024"
 build = "src/build.rs"
 
