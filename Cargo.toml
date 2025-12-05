@@ -2,8 +2,12 @@
 name = "chess_realm"
 version = "0.1.0"
 edition = "2024"
+build = "src/build.rs"
 
 [dependencies]
 eframe = { version = "0.33.2", features = ["persistence"] }
 rfd = "0.16.0"
 serde = { version = "1.0.228", features = ["derive"] }
+
+[build-dependencies]
+embed-resource = "3.0.6"
