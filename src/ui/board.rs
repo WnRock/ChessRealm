@@ -1,5 +1,9 @@
 use crate::{
-    game::{piece::PieceSide, rules::get_valid_moves, state::MoveResult},
+    game::{
+        piece::{Piece, PieceSide},
+        rules::get_valid_moves,
+        state::MoveResult,
+    },
     ui::{
         app::ChessRealm,
         state::{GameMode, PieceAnimation, PopupTip},
@@ -257,22 +261,7 @@ impl ChessRealm {
                         );
                     }
 
-                    let bg_color = theme.piece_background(piece.side);
-                    painter.circle_filled(center, radius, bg_color);
-
-                    let text = piece.label();
-
-                    let text_center = center + egui::vec2(0.0, cell_size * 0.12);
-                    painter.text(
-                        text_center,
-                        egui::Align2::CENTER_CENTER,
-                        text,
-                        egui::FontId::new(
-                            cell_size * 0.65,
-                            egui::FontFamily::Name("feibo-zhengdots".into()),
-                        ),
-                        theme.piece.text,
-                    );
+                    draw_piece(&painter, piece, center, cell_size, &theme);
                 }
             }
         }
@@ -313,23 +302,8 @@ impl ChessRealm {
             let start = to_screen(animation.from.1, animation.from.0);
             let end = to_screen(animation.to.1, animation.to.0);
             let center = start.lerp(end, t);
-            let radius = cell_size * 0.4;
 
-            let bg_color = theme.piece_background(animation.piece.side);
-            painter.circle_filled(center, radius, bg_color);
-
-            let text = animation.piece.label();
-            let text_center = center + egui::vec2(0.0, cell_size * 0.12);
-            painter.text(
-                text_center,
-                egui::Align2::CENTER_CENTER,
-                text,
-                egui::FontId::new(
-                    cell_size * 0.65,
-                    egui::FontFamily::Name("feibo-zhengdots".into()),
-                ),
-                theme.piece.text,
-            );
+            draw_piece(&painter, animation.piece, center, cell_size, &theme);
         }
     }
 
@@ -435,4 +409,31 @@ impl ChessRealm {
             self.ui.ai_thinking = true;
         }
     }
+}
+
+/// Draws a piece at the given center position.
+fn draw_piece(
+    painter: &egui::Painter,
+    piece: Piece,
+    center: egui::Pos2,
+    cell_size: f32,
+    theme: &Theme,
+) {
+    let radius = cell_size * 0.4;
+
+    let bg_color = theme.piece_background(piece.side);
+    painter.circle_filled(center, radius, bg_color);
+
+    let text = piece.label();
+    let text_center = center + egui::vec2(0.0, cell_size * 0.12);
+    painter.text(
+        text_center,
+        egui::Align2::CENTER_CENTER,
+        text,
+        egui::FontId::new(
+            cell_size * 0.65,
+            egui::FontFamily::Name("feibo-zhengdots".into()),
+        ),
+        theme.piece.text,
+    );
 }
