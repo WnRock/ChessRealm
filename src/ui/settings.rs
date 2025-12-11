@@ -1,5 +1,6 @@
 use crate::game::engine::uci::EngineHandle;
 use crate::ui::app::{ChessRealm, font};
+use crate::ui::theme::Theme;
 use eframe::egui;
 
 impl ChessRealm {
@@ -119,9 +120,10 @@ impl ChessRealm {
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {
                         ui.add_space(20.0);
                         if self.ui.engine_invalid {
+                            let theme = Theme::from_dark_mode(self.ui.window.dark_mode);
                             ui.label(
                                 font("引擎无效", "zhuque-fangsong", 14.0)
-                                    .color(egui::Color32::from_rgb(220, 50, 50)),
+                                    .color(theme.status.error),
                             );
                         } else if let Some(ref path) = self.ui.window.engine_path {
                             let display_path = truncate_path_display(path, 35);

@@ -1,18 +1,17 @@
 use crate::{
-    game::{
-        piece::PieceSide,
-        rules::get_valid_moves,
-        state::MoveResult,
-    },
+    game::{piece::PieceSide, rules::get_valid_moves, state::MoveResult},
     ui::{
         app::ChessRealm,
         state::{GameMode, PieceAnimation, PopupTip},
+        theme::Theme,
     },
 };
 use eframe::egui;
 
 impl ChessRealm {
     pub fn render_board(&mut self, ui: &mut egui::Ui) {
+        let theme = Theme::from_dark_mode(self.ui.window.dark_mode);
+
         let available_size: egui::Vec2 = ui.available_size();
         let (response, painter) = ui.allocate_painter(available_size, egui::Sense::click());
         let rect: egui::Rect = response.rect;
@@ -170,9 +169,8 @@ impl ChessRealm {
         }
 
         if let Some(last_move) = self.game.last_move {
-            let highlight_color = egui::Color32::from_rgba_unmultiplied(255, 200, 0, 120);
             let corner_len = cell_size * 0.2;
-            let stroke = egui::Stroke::new(3.0, highlight_color);
+            let stroke = egui::Stroke::new(3.0, theme.highlight.last_move);
 
             for &(row, col) in &[last_move.from, last_move.to] {
                 let center = to_screen(col, row);
@@ -216,14 +214,10 @@ impl ChessRealm {
                 painter.circle_stroke(
                     center,
                     cell_size * 0.45,
-                    egui::Stroke::new(3.0, egui::Color32::from_rgba_unmultiplied(0, 200, 0, 180)),
+                    egui::Stroke::new(3.0, theme.highlight.valid_move),
                 );
             } else {
-                painter.circle_filled(
-                    center,
-                    radius,
-                    egui::Color32::from_rgba_unmultiplied(0, 200, 0, 180),
-                );
+                painter.circle_filled(center, radius, theme.highlight.valid_move);
             }
         }
 
@@ -259,20 +253,11 @@ impl ChessRealm {
                         painter.circle_stroke(
                             center,
                             radius + 4.0,
-                            egui::Stroke::new(3.0, egui::Color32::from_rgb(255, 215, 0)),
+                            egui::Stroke::new(3.0, theme.highlight.selected_piece),
                         );
                     }
 
-                    let bg_color = match piece.side {
-                        PieceSide::Red => egui::Color32::from_rgb(200, 50, 50),
-                        PieceSide::Black => {
-                            if self.ui.window.dark_mode {
-                                egui::Color32::from_rgb(120, 120, 130)
-                            } else {
-                                egui::Color32::from_rgb(50, 50, 50)
-                            }
-                        }
-                    };
+                    let bg_color = theme.piece_background(piece.side);
                     painter.circle_filled(center, radius, bg_color);
 
                     let text = piece.label();
@@ -286,7 +271,7 @@ impl ChessRealm {
                             cell_size * 0.65,
                             egui::FontFamily::Name("feibo-zhengdots".into()),
                         ),
-                        egui::Color32::WHITE,
+                        theme.piece.text,
                     );
                 }
             }
@@ -302,16 +287,12 @@ impl ChessRealm {
                 let popup_center = rect.center();
                 let radius = cell_size * 0.8;
 
-                painter.circle_filled(
-                    popup_center,
-                    radius,
-                    egui::Color32::from_rgba_unmultiplied(255, 255, 255, 180),
-                );
+                painter.circle_filled(popup_center, radius, theme.popup.background);
 
                 let text_color = if popup.use_dark_red {
-                    egui::Color32::from_rgb(139, 0, 0)
+                    theme.popup.text_game_end
                 } else {
-                    egui::Color32::from_rgb(80, 80, 80)
+                    theme.popup.text_normal
                 };
 
                 painter.text(
@@ -334,16 +315,7 @@ impl ChessRealm {
             let center = start.lerp(end, t);
             let radius = cell_size * 0.4;
 
-            let bg_color = match animation.piece.side {
-                PieceSide::Red => egui::Color32::from_rgb(200, 50, 50),
-                PieceSide::Black => {
-                    if self.ui.window.dark_mode {
-                        egui::Color32::from_rgb(120, 120, 130)
-                    } else {
-                        egui::Color32::from_rgb(50, 50, 50)
-                    }
-                }
-            };
+            let bg_color = theme.piece_background(animation.piece.side);
             painter.circle_filled(center, radius, bg_color);
 
             let text = animation.piece.label();
@@ -356,7 +328,7 @@ impl ChessRealm {
                     cell_size * 0.65,
                     egui::FontFamily::Name("feibo-zhengdots".into()),
                 ),
-                egui::Color32::WHITE,
+                theme.piece.text,
             );
         }
     }
