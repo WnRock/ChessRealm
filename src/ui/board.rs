@@ -1,6 +1,6 @@
 use crate::{
     game::{
-        piece::{Piece, PieceKind, PieceSide},
+        piece::PieceSide,
         rules::get_valid_moves,
         state::MoveResult,
     },
@@ -243,29 +243,6 @@ impl ChessRealm {
 
         let anim_target = self.ui.piece_animation.as_ref().map(|a| a.to);
 
-        let piece_label = |piece: Piece| -> &'static str {
-            match piece.side {
-                PieceSide::Red => match piece.kind {
-                    PieceKind::Jiang => "帅",
-                    PieceKind::Shi => "仕",
-                    PieceKind::Xiang => "相",
-                    PieceKind::Ma => "马",
-                    PieceKind::Ju => "车",
-                    PieceKind::Pao => "炮",
-                    PieceKind::Zu => "兵",
-                },
-                PieceSide::Black => match piece.kind {
-                    PieceKind::Jiang => "将",
-                    PieceKind::Shi => "士",
-                    PieceKind::Xiang => "象",
-                    PieceKind::Ma => "马",
-                    PieceKind::Ju => "车",
-                    PieceKind::Pao => "炮",
-                    PieceKind::Zu => "卒",
-                },
-            }
-        };
-
         for row in 0..rows {
             for col in 0..cols {
                 if let Some(piece) = self.game.board[row][col] {
@@ -298,7 +275,7 @@ impl ChessRealm {
                     };
                     painter.circle_filled(center, radius, bg_color);
 
-                    let text = piece_label(piece);
+                    let text = piece.label();
 
                     let text_center = center + egui::vec2(0.0, cell_size * 0.12);
                     painter.text(
@@ -369,7 +346,7 @@ impl ChessRealm {
             };
             painter.circle_filled(center, radius, bg_color);
 
-            let text = piece_label(animation.piece);
+            let text = animation.piece.label();
             let text_center = center + egui::vec2(0.0, cell_size * 0.12);
             painter.text(
                 text_center,
