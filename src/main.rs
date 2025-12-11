@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod constants;
+mod engine;
 mod game;
 mod ui;
 use crate::constants::{APP_DEFAULT_SIZE, APP_ICON, APP_ID, APP_MIN_SIZE, APP_NAME};

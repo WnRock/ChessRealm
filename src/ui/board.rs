@@ -1,18 +1,13 @@
 use crate::{
-    game::{
-        piece::{Piece, PieceKind, PieceSide},
-        rules::get_valid_moves,
-        state::MoveResult,
-    },
-    ui::{
-        app::ChessRealm,
-        state::{GameMode, PieceAnimation, PopupTip},
-    },
+    game::piece::Piece,
+    ui::{app::ChessRealm, theme::Theme},
 };
 use eframe::egui;
 
 impl ChessRealm {
     pub fn render_board(&mut self, ui: &mut egui::Ui) {
+        let theme = Theme::from_dark_mode(self.ui.window.dark_mode);
+
         let available_size: egui::Vec2 = ui.available_size();
         let (response, painter) = ui.allocate_painter(available_size, egui::Sense::click());
         let rect: egui::Rect = response.rect;
@@ -170,9 +165,8 @@ impl ChessRealm {
         }
 
         if let Some(last_move) = self.game.last_move {
-            let highlight_color = egui::Color32::from_rgba_unmultiplied(255, 200, 0, 120);
             let corner_len = cell_size * 0.2;
-            let stroke = egui::Stroke::new(3.0, highlight_color);
+            let stroke = egui::Stroke::new(3.0, theme.highlight.last_move);
 
             for &(row, col) in &[last_move.from, last_move.to] {
                 let center = to_screen(col, row);
@@ -216,14 +210,10 @@ impl ChessRealm {
                 painter.circle_stroke(
                     center,
                     cell_size * 0.45,
-                    egui::Stroke::new(3.0, egui::Color32::from_rgba_unmultiplied(0, 200, 0, 180)),
+                    egui::Stroke::new(3.0, theme.highlight.valid_move),
                 );
             } else {
-                painter.circle_filled(
-                    center,
-                    radius,
-                    egui::Color32::from_rgba_unmultiplied(0, 200, 0, 180),
-                );
+                painter.circle_filled(center, radius, theme.highlight.valid_move);
             }
         }
 
@@ -243,29 +233,6 @@ impl ChessRealm {
 
         let anim_target = self.ui.piece_animation.as_ref().map(|a| a.to);
 
-        let piece_label = |piece: Piece| -> &'static str {
-            match piece.side {
-                PieceSide::Red => match piece.kind {
-                    PieceKind::Jiang => "帅",
-                    PieceKind::Shi => "仕",
-                    PieceKind::Xiang => "相",
-                    PieceKind::Ma => "马",
-                    PieceKind::Ju => "车",
-                    PieceKind::Pao => "炮",
-                    PieceKind::Zu => "兵",
-                },
-                PieceSide::Black => match piece.kind {
-                    PieceKind::Jiang => "将",
-                    PieceKind::Shi => "士",
-                    PieceKind::Xiang => "象",
-                    PieceKind::Ma => "马",
-                    PieceKind::Ju => "车",
-                    PieceKind::Pao => "炮",
-                    PieceKind::Zu => "卒",
-                },
-            }
-        };
-
         for row in 0..rows {
             for col in 0..cols {
                 if let Some(piece) = self.game.board[row][col] {
@@ -282,35 +249,11 @@ impl ChessRealm {
                         painter.circle_stroke(
                             center,
                             radius + 4.0,
-                            egui::Stroke::new(3.0, egui::Color32::from_rgb(255, 215, 0)),
+                            egui::Stroke::new(3.0, theme.highlight.selected_piece),
                         );
                     }
 
-                    let bg_color = match piece.side {
-                        PieceSide::Red => egui::Color32::from_rgb(200, 50, 50),
-                        PieceSide::Black => {
-                            if self.ui.window.dark_mode {
-                                egui::Color32::from_rgb(120, 120, 130)
-                            } else {
-                                egui::Color32::from_rgb(50, 50, 50)
-                            }
-                        }
-                    };
-                    painter.circle_filled(center, radius, bg_color);
-
-                    let text = piece_label(piece);
-
-                    let text_center = center + egui::vec2(0.0, cell_size * 0.12);
-                    painter.text(
-                        text_center,
-                        egui::Align2::CENTER_CENTER,
-                        text,
-                        egui::FontId::new(
-                            cell_size * 0.65,
-                            egui::FontFamily::Name("feibo-zhengdots".into()),
-                        ),
-                        egui::Color32::WHITE,
-                    );
+                    draw_piece(&painter, piece, center, cell_size, &theme);
                 }
             }
         }
@@ -325,16 +268,12 @@ impl ChessRealm {
                 let popup_center = rect.center();
                 let radius = cell_size * 0.8;
 
-                painter.circle_filled(
-                    popup_center,
-                    radius,
-                    egui::Color32::from_rgba_unmultiplied(255, 255, 255, 180),
-                );
+                painter.circle_filled(popup_center, radius, theme.popup.background);
 
                 let text_color = if popup.use_dark_red {
-                    egui::Color32::from_rgb(139, 0, 0)
+                    theme.popup.text_game_end
                 } else {
-                    egui::Color32::from_rgb(80, 80, 80)
+                    theme.popup.text_normal
                 };
 
                 painter.text(
@@ -355,135 +294,35 @@ impl ChessRealm {
             let start = to_screen(animation.from.1, animation.from.0);
             let end = to_screen(animation.to.1, animation.to.0);
             let center = start.lerp(end, t);
-            let radius = cell_size * 0.4;
 
-            let bg_color = match animation.piece.side {
-                PieceSide::Red => egui::Color32::from_rgb(200, 50, 50),
-                PieceSide::Black => {
-                    if self.ui.window.dark_mode {
-                        egui::Color32::from_rgb(120, 120, 130)
-                    } else {
-                        egui::Color32::from_rgb(50, 50, 50)
-                    }
-                }
-            };
-            painter.circle_filled(center, radius, bg_color);
-
-            let text = piece_label(animation.piece);
-            let text_center = center + egui::vec2(0.0, cell_size * 0.12);
-            painter.text(
-                text_center,
-                egui::Align2::CENTER_CENTER,
-                text,
-                egui::FontId::new(
-                    cell_size * 0.65,
-                    egui::FontFamily::Name("feibo-zhengdots".into()),
-                ),
-                egui::Color32::WHITE,
-            );
+            draw_piece(&painter, animation.piece, center, cell_size, &theme);
         }
     }
+}
 
-    fn handle_board_click(&mut self, row: usize, col: usize) {
-        if self.should_block_input() {
-            return;
-        }
+/// Draws a piece at the given center position.
+fn draw_piece(
+    painter: &egui::Painter,
+    piece: Piece,
+    center: egui::Pos2,
+    cell_size: f32,
+    theme: &Theme,
+) {
+    let radius = cell_size * 0.4;
 
-        let clicked_pos = (row, col);
+    let bg_color = theme.piece_background(piece.side);
+    painter.circle_filled(center, radius, bg_color);
 
-        if let Some(selected_pos) = self.game.selected_piece {
-            if self.game.valid_moves.contains(&clicked_pos) {
-                let moving_piece = self.game.board[selected_pos.0][selected_pos.1];
-
-                let result = self.game.make_move(selected_pos, clicked_pos);
-
-                if !matches!(result, MoveResult::Invalid) {
-                    if let Some(piece) = moving_piece {
-                        self.ui.piece_animation =
-                            Some(PieceAnimation::new(piece, selected_pos, clicked_pos));
-                    }
-                }
-
-                self.handle_move_result(result);
-
-                self.game.selected_piece = None;
-                self.game.valid_moves.clear();
-
-                self.check_ai_turn();
-                return;
-            }
-
-            if selected_pos == clicked_pos {
-                self.game.selected_piece = None;
-                self.game.valid_moves.clear();
-                return;
-            }
-
-            if let Some(piece) = self.game.board[row][col] {
-                if piece.side == self.game.current_turn {
-                    self.game.selected_piece = Some(clicked_pos);
-                    self.game.valid_moves =
-                        get_valid_moves(&self.game.board, clicked_pos, self.game.current_turn);
-                    return;
-                }
-            }
-
-            self.game.selected_piece = None;
-            self.game.valid_moves.clear();
-        } else {
-            if let Some(piece) = self.game.board[row][col] {
-                if piece.side == self.game.current_turn {
-                    self.game.selected_piece = Some(clicked_pos);
-                    self.game.valid_moves =
-                        get_valid_moves(&self.game.board, clicked_pos, self.game.current_turn);
-                }
-            }
-        }
-    }
-
-    pub fn handle_move_result(&mut self, result: MoveResult) {
-        match result {
-            MoveResult::Capture(_piece) => {
-                self.ui.popup = Some(PopupTip::new("吃".to_string()));
-            }
-            MoveResult::Check => {
-                self.ui.popup = Some(PopupTip::new("将".to_string()));
-            }
-            MoveResult::CaptureAndCheck(_piece) => {
-                self.ui.popup = Some(PopupTip::new("将".to_string()));
-            }
-            MoveResult::Checkmate(winner) | MoveResult::Stalemate(winner) => {
-                let message = match winner {
-                    PieceSide::Red => "胜",
-                    PieceSide::Black => "负",
-                };
-                self.ui.popup = Some(PopupTip::new_game_end(message.to_string()));
-            }
-            MoveResult::Success | MoveResult::Invalid => {}
-        }
-    }
-
-    /// Returns true if player input should be blocked.
-    fn should_block_input(&self) -> bool {
-        if self.ui.ai_thinking {
-            return true;
-        }
-        if self.ui.window.game_mode == GameMode::PlayerVsAI && self.game.is_ai_turn() {
-            return true;
-        }
-        if self.ui.piece_animation.is_some() {
-            return true;
-        }
-        false
-    }
-
-    /// Checks if it's AI's turn and sets the thinking flag.
-    fn check_ai_turn(&mut self) {
-        if self.ui.window.game_mode == GameMode::PlayerVsAI
-            && self.game.is_ai_turn()
-            && self.game.status == crate::game::state::GameStatus::InProgress
-        {
-            self.ui.ai_thinking = true;
-        }
-    }
+    let text = piece.label();
+    let text_center = center + egui::vec2(0.0, cell_size * 0.12);
+    painter.text(
+        text_center,
+        egui::Align2::CENTER_CENTER,
+        text,
+        egui::FontId::new(
+            cell_size * 0.65,
+            egui::FontFamily::Name("feibo-zhengdots".into()),
+        ),
+        theme.piece.text,
+    );
 }

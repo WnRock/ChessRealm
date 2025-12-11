@@ -1,5 +1,6 @@
 use crate::constants::APP_DEFAULT_SIZE;
-use crate::game::{engine::uci::EngineHandle, piece::Piece};
+use crate::engine::uci::EngineHandle;
+use crate::game::piece::Piece;
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 
