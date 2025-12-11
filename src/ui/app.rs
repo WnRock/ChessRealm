@@ -46,6 +46,7 @@ impl ChessRealm {
                 engine_invalid: false,
                 ai_thinking: false,
                 ai_request_sent: false,
+                piece_animation: None,
             },
         }
     }
@@ -81,7 +82,21 @@ impl ChessRealm {
 
                 if let Ok(move_uci) = result {
                     if let Some(ai_move) = GameState::uci_to_move(&move_uci) {
+                        let moving_piece = self.game.board[ai_move.from.0][ai_move.from.1];
+
                         let result = self.game.make_move(ai_move.from, ai_move.to);
+
+                        if !matches!(result, crate::game::state::MoveResult::Invalid) {
+                            if let Some(piece) = moving_piece {
+                                self.ui.piece_animation =
+                                    Some(crate::ui::state::PieceAnimation::new(
+                                        piece,
+                                        ai_move.from,
+                                        ai_move.to,
+                                    ));
+                            }
+                        }
+
                         self.handle_move_result(result);
                     }
                 }
@@ -97,7 +112,9 @@ impl eframe::App for ChessRealm {
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.track_window_size(ctx);
-        self.poll_ai_move();
+        if self.ui.piece_animation.is_none() {
+            self.poll_ai_move();
+        }
 
         if self.ui.ai_thinking && !self.ui.ai_request_sent {
             self.request_ai_move();
@@ -145,6 +162,7 @@ impl eframe::App for ChessRealm {
                             self.game = GameState::default();
                             self.ui.ai_thinking = false;
                             self.ui.ai_request_sent = false;
+                            self.ui.piece_animation = None;
                         }
                         let can_toggle_to_ai = self.ui.engine.is_some()
                             || self.ui.window.game_mode == crate::ui::state::GameMode::PlayerVsAI;

@@ -1,5 +1,5 @@
 use crate::constants::APP_DEFAULT_SIZE;
-use crate::game::engine::uci::EngineHandle;
+use crate::game::{engine::uci::EngineHandle, piece::Piece};
 use serde::{Deserialize, Serialize};
 use std::time::Instant;
 
@@ -82,6 +82,34 @@ impl PopupTip {
     }
 }
 
+pub struct PieceAnimation {
+    pub piece: Piece,
+    pub from: (usize, usize),
+    pub to: (usize, usize),
+    pub start_time: Instant,
+    pub duration_secs: f32,
+}
+
+impl PieceAnimation {
+    pub fn new(piece: Piece, from: (usize, usize), to: (usize, usize)) -> Self {
+        Self {
+            piece,
+            from,
+            to,
+            start_time: Instant::now(),
+            duration_secs: 0.5,
+        }
+    }
+
+    pub fn progress(&self) -> f32 {
+        (self.start_time.elapsed().as_secs_f32() / self.duration_secs).min(1.0)
+    }
+
+    pub fn is_done(&self) -> bool {
+        self.progress() >= 1.0
+    }
+}
+
 pub struct UiState {
     pub window: WindowState,
     pub popup: Option<PopupTip>,
@@ -89,6 +117,7 @@ pub struct UiState {
     pub engine_invalid: bool,
     pub ai_thinking: bool,
     pub ai_request_sent: bool,
+    pub piece_animation: Option<PieceAnimation>,
 }
 
 impl Default for UiState {
@@ -100,6 +129,7 @@ impl Default for UiState {
             engine_invalid: false,
             ai_thinking: false,
             ai_request_sent: false,
+            piece_animation: None,
         }
     }
 }

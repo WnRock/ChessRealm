@@ -1,12 +1,12 @@
 use crate::{
     game::{
-        piece::{PieceKind, PieceSide},
+        piece::{Piece, PieceKind, PieceSide},
         rules::get_valid_moves,
         state::MoveResult,
     },
     ui::{
         app::ChessRealm,
-        state::{GameMode, PopupTip},
+        state::{GameMode, PieceAnimation, PopupTip},
     },
 };
 use eframe::egui;
@@ -227,9 +227,52 @@ impl ChessRealm {
             }
         }
 
+        let animation_finished = self
+            .ui
+            .piece_animation
+            .as_ref()
+            .map(|a| a.is_done())
+            .unwrap_or(false);
+        if animation_finished {
+            self.ui.piece_animation = None;
+        }
+
+        if self.ui.piece_animation.is_some() {
+            ui.ctx().request_repaint();
+        }
+
+        let anim_target = self.ui.piece_animation.as_ref().map(|a| a.to);
+
+        let piece_label = |piece: Piece| -> &'static str {
+            match piece.side {
+                PieceSide::Red => match piece.kind {
+                    PieceKind::Jiang => "帅",
+                    PieceKind::Shi => "仕",
+                    PieceKind::Xiang => "相",
+                    PieceKind::Ma => "马",
+                    PieceKind::Ju => "车",
+                    PieceKind::Pao => "炮",
+                    PieceKind::Zu => "兵",
+                },
+                PieceSide::Black => match piece.kind {
+                    PieceKind::Jiang => "将",
+                    PieceKind::Shi => "士",
+                    PieceKind::Xiang => "象",
+                    PieceKind::Ma => "马",
+                    PieceKind::Ju => "车",
+                    PieceKind::Pao => "炮",
+                    PieceKind::Zu => "卒",
+                },
+            }
+        };
+
         for row in 0..rows {
             for col in 0..cols {
                 if let Some(piece) = self.game.board[row][col] {
+                    if anim_target == Some((row, col)) {
+                        continue;
+                    }
+
                     let center = to_screen(col, row);
                     let radius = cell_size * 0.4;
 
@@ -245,19 +288,17 @@ impl ChessRealm {
 
                     let bg_color = match piece.side {
                         PieceSide::Red => egui::Color32::from_rgb(200, 50, 50),
-                        PieceSide::Black => egui::Color32::from_rgb(50, 50, 50),
+                        PieceSide::Black => {
+                            if self.ui.window.dark_mode {
+                                egui::Color32::from_rgb(120, 120, 130)
+                            } else {
+                                egui::Color32::from_rgb(50, 50, 50)
+                            }
+                        }
                     };
                     painter.circle_filled(center, radius, bg_color);
 
-                    let text = match piece.kind {
-                        PieceKind::Jiang => "将",
-                        PieceKind::Shi => "士",
-                        PieceKind::Xiang => "相",
-                        PieceKind::Ma => "马",
-                        PieceKind::Ju => "车",
-                        PieceKind::Pao => "炮",
-                        PieceKind::Zu => "兵",
-                    };
+                    let text = piece_label(piece);
 
                     let text_center = center + egui::vec2(0.0, cell_size * 0.12);
                     painter.text(
@@ -307,6 +348,40 @@ impl ChessRealm {
                 ui.ctx().request_repaint();
             }
         }
+
+        if let Some(animation) = &self.ui.piece_animation {
+            let progress = animation.progress();
+            let t = progress * progress * (3.0 - 2.0 * progress);
+            let start = to_screen(animation.from.1, animation.from.0);
+            let end = to_screen(animation.to.1, animation.to.0);
+            let center = start.lerp(end, t);
+            let radius = cell_size * 0.4;
+
+            let bg_color = match animation.piece.side {
+                PieceSide::Red => egui::Color32::from_rgb(200, 50, 50),
+                PieceSide::Black => {
+                    if self.ui.window.dark_mode {
+                        egui::Color32::from_rgb(120, 120, 130)
+                    } else {
+                        egui::Color32::from_rgb(50, 50, 50)
+                    }
+                }
+            };
+            painter.circle_filled(center, radius, bg_color);
+
+            let text = piece_label(animation.piece);
+            let text_center = center + egui::vec2(0.0, cell_size * 0.12);
+            painter.text(
+                text_center,
+                egui::Align2::CENTER_CENTER,
+                text,
+                egui::FontId::new(
+                    cell_size * 0.65,
+                    egui::FontFamily::Name("feibo-zhengdots".into()),
+                ),
+                egui::Color32::WHITE,
+            );
+        }
     }
 
     fn handle_board_click(&mut self, row: usize, col: usize) {
@@ -318,7 +393,17 @@ impl ChessRealm {
 
         if let Some(selected_pos) = self.game.selected_piece {
             if self.game.valid_moves.contains(&clicked_pos) {
+                let moving_piece = self.game.board[selected_pos.0][selected_pos.1];
+
                 let result = self.game.make_move(selected_pos, clicked_pos);
+
+                if !matches!(result, MoveResult::Invalid) {
+                    if let Some(piece) = moving_piece {
+                        self.ui.piece_animation =
+                            Some(PieceAnimation::new(piece, selected_pos, clicked_pos));
+                    }
+                }
+
                 self.handle_move_result(result);
 
                 self.game.selected_piece = None;
@@ -384,6 +469,9 @@ impl ChessRealm {
             return true;
         }
         if self.ui.window.game_mode == GameMode::PlayerVsAI && self.game.is_ai_turn() {
+            return true;
+        }
+        if self.ui.piece_animation.is_some() {
             return true;
         }
         false
