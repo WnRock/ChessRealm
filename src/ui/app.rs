@@ -1,9 +1,10 @@
-use crate::constants::{APP_MIN_SIZE, APP_STATE_KEY, AVAILABLE_FONTS};
+use crate::constants::{APP_MIN_SIZE, APP_STATE_KEY};
 use crate::game::engine::uci::EngineHandle;
 use crate::game::state::GameState;
+use crate::ui::fonts::{font, load_fonts};
 use crate::ui::state::UiState;
 use crate::ui::state::WindowState;
-use eframe::egui::{self, FontData, FontDefinitions, FontFamily, FontId, RichText};
+use eframe::egui;
 
 pub struct ChessRealm {
     pub game: GameState,
@@ -198,24 +199,4 @@ impl eframe::App for ChessRealm {
             self.render_board(ui);
         });
     }
-}
-
-fn load_fonts(ctx: &egui::Context) {
-    let mut fonts = FontDefinitions::default();
-
-    for (name, data) in AVAILABLE_FONTS {
-        fonts
-            .font_data
-            .insert(name.to_string(), FontData::from_static(data).into());
-
-        fonts
-            .families
-            .insert(FontFamily::Name((*name).into()), vec![name.to_string()]);
-    }
-
-    ctx.set_fonts(fonts);
-}
-
-pub fn font(text: impl Into<String>, font_name: &str, size: f32) -> RichText {
-    RichText::new(text).font(FontId::new(size, FontFamily::Name(font_name.into())))
 }
