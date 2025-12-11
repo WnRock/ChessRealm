@@ -33,18 +33,41 @@ impl ChessRealm {
         };
         cc.egui_ctx.set_visuals(visuals);
 
-        let engine = window
-            .engine_path
-            .as_ref()
-            .and_then(|path| EngineHandle::new(path).ok());
+        let mut engine = None;
+        let mut engine_invalid = false;
+        let mut engine_path = window.engine_path.clone();
+        let mut game_mode = window.game_mode;
+
+        if let Some(ref path) = engine_path {
+            if std::path::Path::new(path).exists() {
+                match EngineHandle::new(path) {
+                    Ok(handle) => {
+                        engine = Some(handle);
+                    }
+                    Err(_) => {
+                        engine_invalid = true;
+                        engine_path = None;
+                        game_mode = crate::ui::state::GameMode::PlayerVsPlayer;
+                    }
+                }
+            } else {
+                engine_invalid = true;
+                engine_path = None;
+                game_mode = crate::ui::state::GameMode::PlayerVsPlayer;
+            }
+        }
 
         Self {
             game: GameState::default(),
             ui: UiState {
-                window,
+                window: WindowState {
+                    engine_path,
+                    game_mode,
+                    ..window
+                },
                 popup: None,
                 engine,
-                engine_invalid: false,
+                engine_invalid,
                 ai_thinking: false,
                 ai_request_sent: false,
                 piece_animation: None,
