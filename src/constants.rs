@@ -5,7 +5,7 @@ pub const APP_ID: &str = "dev.wnrock.chess_realm";
 pub const APP_NAME: &str = "Chess Realm";
 
 /// The application icon as a byte array (PNG format)
-pub const APP_ICON: &[u8] = include_bytes!("../assets/icon.png");
+pub const APP_ICON: &[u8] = include_bytes!("../assets/icons/icon.png");
 
 /// Default window size [width, height] in pixels
 pub const APP_DEFAULT_SIZE: [f32; 2] = [1024.0, 768.0];
@@ -20,10 +20,10 @@ pub const APP_STATE_KEY: &str = "chess_realm_state";
 pub const AVAILABLE_FONTS: &[(&str, &[u8])] = &[
     (
         "zhuque-fangsong",
-        include_bytes!("../assets/ZhuqueFangsong-Regular.ttf"),
+        include_bytes!("../assets/fonts/ZhuqueFangsong-Regular.ttf"),
     ),
     (
         "feibo-zhengdots",
-        include_bytes!("../assets/FeiboZhengDots.ttf"),
+        include_bytes!("../assets/fonts/FeiboZhengDots.ttf"),
     ),
 ];
