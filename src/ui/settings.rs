@@ -1,4 +1,4 @@
-use crate::game::engine::uci::EngineHandle;
+use crate::engine::uci::EngineHandle;
 use crate::ui::app::ChessRealm;
 use crate::ui::fonts::font;
 use crate::ui::theme::Theme;

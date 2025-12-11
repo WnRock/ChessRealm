@@ -1,5 +1,5 @@
 use crate::constants::{APP_MIN_SIZE, APP_STATE_KEY};
-use crate::game::engine::uci::EngineHandle;
+use crate::engine::uci::EngineHandle;
 use crate::game::state::GameState;
 use crate::ui::fonts::{font, load_fonts};
 use crate::ui::state::UiState;
