@@ -35,6 +35,7 @@ pub struct WindowState {
     pub dark_mode: bool,
     pub engine_path: Option<String>,
     pub game_mode: GameMode,
+    pub engine_elo: u32,
     #[serde(skip)]
     pub show_settings: bool,
 }
@@ -47,6 +48,7 @@ impl Default for WindowState {
             dark_mode: true,
             engine_path: None,
             game_mode: GameMode::default(),
+            engine_elo: 3000,
             show_settings: false,
         }
     }

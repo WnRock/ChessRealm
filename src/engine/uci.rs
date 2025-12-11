@@ -144,6 +144,12 @@ impl UciEngine {
         self.wait_ready()
     }
 
+    /// Sends a setoption command to configure the engine.
+    pub fn set_option(&mut self, name: &str, value: &str) -> Result<(), EngineError> {
+        let cmd = format!("setoption name {} value {}", name, value);
+        self.send_command(&cmd)
+    }
+
     /// Sends the position command starting from initial position with moves.
     pub fn set_position_startpos(&mut self, moves: &str) -> Result<(), EngineError> {
         let cmd = if moves.is_empty() {
@@ -200,6 +206,7 @@ pub struct MoveRequest {
     pub moves_uci: String,
     pub depth: Option<u32>,
     pub movetime_ms: Option<u64>,
+    pub elo: Option<u32>,
 }
 
 /// A handle to communicate with a running engine in a background thread.
@@ -241,6 +248,12 @@ impl EngineHandle {
             while let Ok(request) = request_receiver.recv() {
                 let result = (|| {
                     engine.new_game()?;
+                    if let Some(elo) = request.elo {
+                        engine.set_option("UCI_LimitStrength", "true")?;
+                        engine.set_option("UCI_Elo", &elo.to_string())?;
+                    } else {
+                        engine.set_option("UCI_LimitStrength", "false")?;
+                    }
                     engine.set_position_startpos(&request.moves_uci)?;
                     engine.go(request.depth, request.movetime_ms)
                 })();
@@ -261,11 +274,18 @@ impl EngineHandle {
     }
 
     /// Sends a move request to the engine (non-blocking).
-    pub fn request_move(&self, moves_uci: String, depth: Option<u32>, movetime_ms: Option<u64>) {
+    pub fn request_move(
+        &self,
+        moves_uci: String,
+        depth: Option<u32>,
+        movetime_ms: Option<u64>,
+        elo: Option<u32>,
+    ) {
         let _ = self.request_sender.send(MoveRequest {
             moves_uci,
             depth,
             movetime_ms,
+            elo,
         });
     }
 

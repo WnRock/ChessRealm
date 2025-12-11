@@ -88,7 +88,12 @@ impl ChessRealm {
     pub fn request_ai_move(&mut self) {
         if let Some(engine) = &self.ui.engine {
             let moves_uci = self.game.moves_to_uci();
-            engine.request_move(moves_uci, Some(10), Some(2000));
+            let elo = if self.ui.window.engine_elo == 0 {
+                None
+            } else {
+                Some(self.ui.window.engine_elo)
+            };
+            engine.request_move(moves_uci, Some(10), Some(2000), elo);
             self.ui.ai_request_sent = true;
         }
     }
