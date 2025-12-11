@@ -81,6 +81,43 @@ impl ChessRealm {
 
                     ui.add_space(10.0);
 
+                    if self.ui.engine.is_some() && !self.ui.engine_invalid {
+                        ui.horizontal(|ui| {
+                            ui.set_min_height(row_height);
+                            ui.add_space(20.0);
+                            ui.with_layout(
+                                egui::Layout::left_to_right(egui::Align::Center),
+                                |ui| {
+                                    ui.label(font("引擎棋力等级", "zhuque-fangsong", 16.0));
+                                },
+                            );
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    ui.add_space(20.0);
+                                    ui.label(font(
+                                        &format!("{}", self.ui.window.engine_elo),
+                                        "zhuque-fangsong",
+                                        16.0,
+                                    ));
+                                    ui.add_space(10.0);
+                                    let mut elo = self.ui.window.engine_elo as f32;
+                                    if ui
+                                        .add(
+                                            egui::Slider::new(&mut elo, 1300.0..=3000.0)
+                                                .show_value(false),
+                                        )
+                                        .changed()
+                                    {
+                                        self.ui.window.engine_elo = elo as u32;
+                                    }
+                                },
+                            );
+                        });
+
+                        ui.add_space(10.0);
+                    }
+
                     ui.horizontal(|ui| {
                         ui.set_min_height(row_height);
                         ui.add_space(20.0);
