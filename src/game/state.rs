@@ -21,6 +21,7 @@ pub enum MoveResult {
 pub struct Move {
     pub from: (usize, usize),
     pub to: (usize, usize),
+    pub captured: Option<Piece>,
 }
 
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize, Default)]
@@ -100,7 +101,11 @@ impl GameState {
         }
         let from = Self::uci_to_pos(&uci[0..2])?;
         let to = Self::uci_to_pos(&uci[2..4])?;
-        Some(Move { from, to })
+        Some(Move {
+            from,
+            to,
+            captured: None,
+        })
     }
 
     /// Returns the move history in UCI format for engine position command.
@@ -120,13 +125,13 @@ impl GameState {
             return MoveResult::Invalid;
         }
 
-        let current_move = Move { from, to };
-        self.move_history.push(current_move);
-        self.last_move = Some(current_move);
-
         let piece = self.board[from.0][from.1].take();
         let captured = self.board[to.0][to.1].take();
         self.board[to.0][to.1] = piece;
+
+        let current_move = Move { from, to, captured };
+        self.move_history.push(current_move);
+        self.last_move = Some(current_move);
 
         let moving_side = self.current_turn;
         self.current_turn = match self.current_turn {
@@ -171,5 +176,44 @@ impl GameState {
         } else {
             false
         }
+    }
+
+    /// Undo the last move. Returns the undone move if successful.
+    pub fn undo_last_move(&mut self) -> Option<Move> {
+        if self.move_history.is_empty() {
+            return None;
+        }
+
+        let undone_move = self.move_history.pop().unwrap();
+
+        let piece = self.board[undone_move.to.0][undone_move.to.1].take();
+        self.board[undone_move.from.0][undone_move.from.1] = piece;
+
+        if let Some(captured) = undone_move.captured {
+            self.board[undone_move.to.0][undone_move.to.1] = Some(captured);
+        }
+
+        self.last_move = self.move_history.last().copied();
+        self.current_turn = match self.current_turn {
+            PieceSide::Red => PieceSide::Black,
+            PieceSide::Black => PieceSide::Red,
+        };
+        self.status = GameStatus::InProgress;
+        self.selected_piece = None;
+        self.valid_moves.clear();
+
+        Some(undone_move)
+    }
+
+    /// Undo the last two moves. Returns the undone moves if successful.
+    pub fn undo_last_two_moves(&mut self) -> Option<(Move, Move)> {
+        if self.move_history.len() < 2 {
+            return None;
+        }
+
+        let move2 = self.undo_last_move()?;
+        let move1 = self.undo_last_move()?;
+
+        Some((move1, move2))
     }
 }

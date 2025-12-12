@@ -70,7 +70,7 @@ impl ChessRealm {
                 engine_invalid,
                 ai_thinking: false,
                 ai_request_sent: false,
-                piece_animation: None,
+                piece_animations: Vec::new(),
             },
         }
     }
@@ -117,12 +117,13 @@ impl ChessRealm {
 
                         if !matches!(result, crate::game::state::MoveResult::Invalid) {
                             if let Some(piece) = moving_piece {
-                                self.ui.piece_animation =
-                                    Some(crate::ui::state::PieceAnimation::new(
+                                self.ui.piece_animations.push(
+                                    crate::ui::state::PieceAnimation::new(
                                         piece,
                                         ai_move.from,
                                         ai_move.to,
-                                    ));
+                                    ),
+                                );
                             }
                         }
 
@@ -141,7 +142,7 @@ impl eframe::App for ChessRealm {
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.track_window_size(ctx);
-        if self.ui.piece_animation.is_none() {
+        if self.ui.piece_animations.is_empty() {
             self.poll_ai_move();
         }
 
@@ -191,7 +192,7 @@ impl eframe::App for ChessRealm {
                             self.game = GameState::default();
                             self.ui.ai_thinking = false;
                             self.ui.ai_request_sent = false;
-                            self.ui.piece_animation = None;
+                            self.ui.piece_animations.clear();
                         }
                         let can_toggle_to_ai = self.ui.engine.is_some()
                             || self.ui.window.game_mode == crate::ui::state::GameMode::PlayerVsAI;
@@ -207,6 +208,15 @@ impl eframe::App for ChessRealm {
                                 self.ui.window.game_mode = self.ui.window.game_mode.toggle();
                                 self.ui.ai_thinking = false;
                                 self.ui.ai_request_sent = false;
+                            }
+                        });
+
+                        ui.add_enabled_ui(!self.game.move_history.is_empty(), |ui| {
+                            if ui
+                                .button(font("悔棋", "zhuque-fangsong", font_size))
+                                .clicked()
+                            {
+                                self.handle_undo();
                             }
                         });
                     });

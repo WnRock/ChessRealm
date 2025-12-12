@@ -23,8 +23,11 @@ impl ChessRealm {
 
                 if !matches!(result, MoveResult::Invalid) {
                     if let Some(piece) = moving_piece {
-                        self.ui.piece_animation =
-                            Some(PieceAnimation::new(piece, selected_pos, clicked_pos));
+                        self.ui.piece_animations.push(PieceAnimation::new(
+                            piece,
+                            selected_pos,
+                            clicked_pos,
+                        ));
                     }
                 }
 
@@ -86,6 +89,54 @@ impl ChessRealm {
         }
     }
 
+    /// Handles the undo button click.
+    pub fn handle_undo(&mut self) {
+        match self.ui.window.game_mode {
+            GameMode::PlayerVsPlayer => {
+                if let Some(undone_move) = self.game.undo_last_move() {
+                    if let Some(piece) = self.game.board[undone_move.from.0][undone_move.from.1] {
+                        self.ui.piece_animations.push(PieceAnimation::new(
+                            piece,
+                            undone_move.to,
+                            undone_move.from,
+                        ));
+                    }
+                }
+            }
+            GameMode::PlayerVsAI => {
+                if self.ui.ai_thinking {
+                    if let Some(undone_move) = self.game.undo_last_move() {
+                        if let Some(piece) = self.game.board[undone_move.from.0][undone_move.from.1]
+                        {
+                            self.ui.piece_animations.push(PieceAnimation::new(
+                                piece,
+                                undone_move.to,
+                                undone_move.from,
+                            ));
+                        }
+                        self.ui.ai_thinking = false;
+                        self.ui.ai_request_sent = false;
+                    }
+                } else if let Some((move1, move2)) = self.game.undo_last_two_moves() {
+                    if let Some(piece) = self.game.board[move2.from.0][move2.from.1] {
+                        self.ui
+                            .piece_animations
+                            .push(PieceAnimation::new(piece, move2.to, move2.from));
+                    }
+                    if let Some(piece) = self.game.board[move1.from.0][move1.from.1] {
+                        self.ui
+                            .piece_animations
+                            .push(PieceAnimation::new(piece, move1.to, move1.from));
+                    }
+                    self.ui.ai_thinking = false;
+                    self.ui.ai_request_sent = false;
+
+                    self.check_ai_turn();
+                }
+            }
+        }
+    }
+
     /// Returns true if player input should be blocked.
     pub fn should_block_input(&self) -> bool {
         if self.ui.ai_thinking {
@@ -94,7 +145,7 @@ impl ChessRealm {
         if self.ui.window.game_mode == GameMode::PlayerVsAI && self.game.is_ai_turn() {
             return true;
         }
-        if self.ui.piece_animation.is_some() {
+        if !self.ui.piece_animations.is_empty() {
             return true;
         }
         false

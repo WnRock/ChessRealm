@@ -217,26 +217,19 @@ impl ChessRealm {
             }
         }
 
-        let animation_finished = self
-            .ui
-            .piece_animation
-            .as_ref()
-            .map(|a| a.is_done())
-            .unwrap_or(false);
-        if animation_finished {
-            self.ui.piece_animation = None;
-        }
+        self.ui.piece_animations.retain(|a| !a.is_done());
 
-        if self.ui.piece_animation.is_some() {
+        if !self.ui.piece_animations.is_empty() {
             ui.ctx().request_repaint();
         }
 
-        let anim_target = self.ui.piece_animation.as_ref().map(|a| a.to);
+        let anim_targets: Vec<(usize, usize)> =
+            self.ui.piece_animations.iter().map(|a| a.to).collect();
 
         for row in 0..rows {
             for col in 0..cols {
                 if let Some(piece) = self.game.board[row][col] {
-                    if anim_target == Some((row, col)) {
+                    if anim_targets.contains(&(row, col)) {
                         continue;
                     }
 
@@ -288,7 +281,7 @@ impl ChessRealm {
             }
         }
 
-        if let Some(animation) = &self.ui.piece_animation {
+        for animation in &self.ui.piece_animations {
             let progress = animation.progress();
             let t = progress * progress * (3.0 - 2.0 * progress);
             let start = to_screen(animation.from.1, animation.from.0);
