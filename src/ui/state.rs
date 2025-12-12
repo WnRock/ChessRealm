@@ -100,7 +100,7 @@ impl PieceAnimation {
             from,
             to,
             start_time: Instant::now(),
-            duration_secs: 0.5,
+            duration_secs: 0.35,
         }
     }
 
@@ -120,7 +120,7 @@ pub struct UiState {
     pub engine_invalid: bool,
     pub ai_thinking: bool,
     pub ai_request_sent: bool,
-    pub piece_animation: Option<PieceAnimation>,
+    pub piece_animations: Vec<PieceAnimation>,
 }
 
 impl Default for UiState {
@@ -132,7 +132,7 @@ impl Default for UiState {
             engine_invalid: false,
             ai_thinking: false,
             ai_request_sent: false,
-            piece_animation: None,
+            piece_animations: Vec::new(),
         }
     }
 }
