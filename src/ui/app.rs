@@ -208,6 +208,7 @@ impl eframe::App for ChessRealm {
                                 self.ui.window.game_mode = self.ui.window.game_mode.toggle();
                                 self.ui.ai_thinking = false;
                                 self.ui.ai_request_sent = false;
+                                self.check_ai_turn();
                             }
                         });
 
